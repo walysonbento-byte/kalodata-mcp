@@ -136,6 +136,7 @@ O projeto já inclui o arquivo `render.yaml` na raiz, permitindo deploy via **Bl
 4. Configure as variáveis de ambiente manualmente no painel do Render:
    - `KALODATA_SECRET_KEY`: sua chave da Kalodata (rotacionada/nova)
    - `KALODATA_BASE_URL`: `https://staging.kalodata.com` (ou URL de produção)
+   - `MCP_PATH_TOKEN`: código aleatório que vira parte da rota. Com ele, o endpoint passa a ser `/mcp/<MCP_PATH_TOKEN>` e `/mcp` responde 404, então só quem tem a URL completa usa seus créditos. Gere um com `python -c "import secrets; print(secrets.token_hex(24))"`.
 
 5. Clique em **Apply**. O Render fará o build e gerará a URL pública (ex: `https://kalodata-mcp.onrender.com`).
 

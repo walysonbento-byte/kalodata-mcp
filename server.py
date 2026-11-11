@@ -12,6 +12,10 @@ KALODATA_SECRET_KEY = os.getenv("KALODATA_SECRET_KEY")
 KALODATA_BASE_URL = os.getenv("KALODATA_BASE_URL", "https://staging.kalodata.com").rstrip("/")
 PORT = int(os.getenv("PORT", "8000"))
 HOST = os.getenv("HOST", "0.0.0.0")
+# Token opcional que vira parte da rota (/mcp/<token>). Protege a URL pública,
+# já que conectores remotos sem autenticação podem ser usados por quem tiver a URL.
+MCP_PATH_TOKEN = os.getenv("MCP_PATH_TOKEN", "").strip().strip("/")
+MCP_PATH = f"/mcp/{MCP_PATH_TOKEN}" if MCP_PATH_TOKEN else "/mcp"
 
 if not KALODATA_SECRET_KEY:
     raise ValueError(
@@ -62,7 +66,7 @@ def _clean_payload(base_params: dict, extra_params: dict) -> dict:
     return payload
 
 # Instância do Servidor MCP — HOST e PORT lidos de variáveis de ambiente
-mcp = FastMCP("kalodata", host=HOST, port=PORT)
+mcp = FastMCP("kalodata", host=HOST, port=PORT, streamable_http_path=MCP_PATH)
 
 @mcp.tool()
 async def category_rank(
@@ -448,12 +452,21 @@ async def livestream_detail(
     return json.dumps(result, indent=2, ensure_ascii=False)
 
 if __name__ == "__main__":
+    import sys
+
+    # Modo stdio: o cliente (ex.: Claude Code) inicia e encerra o servidor sozinho.
+    # Nada pode ser impresso no stdout neste modo, pois ele carrega o protocolo MCP.
+    if "--stdio" in sys.argv or os.getenv("MCP_TRANSPORT") == "stdio":
+        mcp.run(transport="stdio")
+        sys.exit(0)
+
     host = os.getenv("HOST", "0.0.0.0")
     port = int(os.getenv("PORT", 8000))
     # Atualiza settings caso .env seja recarregado após a instanciação
     mcp.settings.host = host
     mcp.settings.port = port
-    print(f"[kalodata-mcp] Servidor iniciando em http://{host}:{port}/mcp")
+    rota = "/mcp/<MCP_PATH_TOKEN>" if MCP_PATH_TOKEN else "/mcp"  # nunca imprime o token
+    print(f"[kalodata-mcp] Servidor iniciando em http://{host}:{port}{rota}")
     print(f"[kalodata-mcp] Transporte: streamable-http | 12 ferramentas registradas")
     mcp.run(transport="streamable-http")
 
