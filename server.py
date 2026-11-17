@@ -4,6 +4,8 @@ import httpx
 from typing import Optional, Dict, Any
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
+from starlette.requests import Request
+from starlette.responses import PlainTextResponse
 
 # Carrega variáveis de ambiente do arquivo .env
 load_dotenv()
@@ -67,6 +69,13 @@ def _clean_payload(base_params: dict, extra_params: dict) -> dict:
 
 # Instância do Servidor MCP — HOST e PORT lidos de variáveis de ambiente
 mcp = FastMCP("kalodata", host=HOST, port=PORT, streamable_http_path=MCP_PATH)
+
+
+@mcp.custom_route("/health", methods=["GET", "HEAD"])
+async def health(request: Request) -> PlainTextResponse:
+    """Rota pública e leve para o ping que evita a hibernação do Render.
+    Não chama a Kalodata, então não gasta créditos e não revela o token."""
+    return PlainTextResponse("ok")
 
 @mcp.tool()
 async def category_rank(
